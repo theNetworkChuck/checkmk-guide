@@ -1,0 +1,115 @@
+#!/usr/bin/env python3
+# Checkmk local check: is this Hermes agent's model login good, and how much of the plan is left?
+#
+# WHAT IT DOES
+#   Reads the agent's own provider from its config.yaml (ChatGPT "openai-codex" or Grok
+#   "xai-oauth"), uses the login the agent already has stored, and prints:
+#     "Hermes model login"  OK if the provider accepts the login, with hours left on the token
+#     "Hermes usage"        percent of the weekly limit used (WARN 80, CRIT 95) -- ChatGPT only
+#   The login is only used to ask the provider "is this accepted" / "how much is used".
+#   It is never printed or written anywhere.
+#   CAUTION: the ChatGPT usage endpoint is not a documented public API. It may change
+#   or stop working. If it does, the check reports UNKNOWN/CRIT instead of staying quiet.
+#
+# WHAT TO CHANGE
+#   Nothing, if the agent keeps its files in ~/.hermes. Otherwise set HERMES_HOME.
+#
+# WHERE IT GOES
+#   On the monitored Linux host, inside a folder named for the seconds to cache:
+#     /usr/lib/check_mk_agent/local/300/hermes_account    (chmod 755)
+#   The 300 folder makes the agent run it every 5 minutes instead of every minute.
+# ChatGPT: asks its usage endpoint. Grok: lists models. Neither costs any usage.
+import base64, glob, json, os, time, urllib.error, urllib.request
+
+def hermes_home():
+    # Look in $HERMES_HOME first, then the running user's ~/.hermes, then any /home/*/.hermes
+    cands = [os.environ.get("HERMES_HOME"), os.path.expanduser("~/.hermes")]
+    cands += sorted(glob.glob("/home/*/.hermes"))
+    for h in cands:
+        if h and (os.path.isfile(os.path.join(h, "state.db")) or os.path.isfile(os.path.join(h, "auth.json"))):
+            return h
+    return os.path.expanduser("~/.hermes")
+
+HOME = hermes_home()
+
+def claims(jwt):
+    p = jwt.split(".")[1]
+    return json.loads(base64.urlsafe_b64decode(p + "=" * (-len(p) % 4)))
+
+def main_provider():
+    # the agent's own model provider: the "provider:" line directly under "model:" in config.yaml
+    try:
+        lines = open(f"{HOME}/config.yaml").read().splitlines()
+        i = lines.index("model:")
+        for l in lines[i + 1:]:
+            if l and not l.startswith(" "):
+                break
+            if l.startswith("  provider:"):
+                return l.split(":", 1)[1].strip().strip("'\"")
+    except Exception:
+        pass
+    return "openai-codex"
+
+PROVIDER = main_provider()
+providers = json.load(open(f"{HOME}/auth.json")).get("providers", {})
+
+if PROVIDER == "xai-oauth":
+    # Grok subscription login: listing models is free and proves the login is accepted.
+    try:
+        tok = providers["xai-oauth"]["tokens"]["access_token"]
+    except Exception:
+        print('2 "Hermes model login" - no Grok (xAI) login stored for this agent')
+        raise SystemExit
+    try:
+        exp_h = (claims(tok).get("exp", 0) - time.time()) / 3600
+    except Exception:
+        exp_h = None
+    req = urllib.request.Request("https://api.x.ai/v1/models",
+                                 headers={"Authorization": f"Bearer {tok}", "User-Agent": "checkmk-hermes"})
+    try:
+        urllib.request.urlopen(req, timeout=20)
+    except urllib.error.HTTPError as e:
+        print(f'2 "Hermes model login" - Grok (xAI) REJECTED the stored login (HTTP {e.code})')
+        raise SystemExit
+    except Exception as e:
+        print(f'3 "Hermes model login" - could not reach xAI: {e}')
+        raise SystemExit
+    if exp_h is None:
+        print('0 "Hermes model login" - Grok (xAI) login accepted')
+    else:
+        print(f'0 "Hermes model login" token_hours_left={exp_h:.0f} Grok (xAI) login accepted, token good for {exp_h:.0f} h')
+    raise SystemExit  # xAI publishes no usage meter for subscription logins, so there is no usage service
+
+if PROVIDER != "openai-codex":
+    print(f'3 "Hermes model login" - model provider {PROVIDER} is not covered by this check')
+    raise SystemExit
+
+try:
+    tok = providers["openai-codex"]["tokens"]["access_token"]
+    exp_h = (claims(tok).get("exp", 0) - time.time()) / 3600
+except Exception:
+    print('2 "Hermes model login" - no ChatGPT login stored for this agent')
+    raise SystemExit
+
+req = urllib.request.Request("https://chatgpt.com/backend-api/wham/usage",
+                             headers={"Authorization": f"Bearer {tok}", "User-Agent": "checkmk-hermes"})
+try:
+    u = json.load(urllib.request.urlopen(req, timeout=20))
+except urllib.error.HTTPError as e:
+    print(f'2 "Hermes model login" - ChatGPT REJECTED the stored login (HTTP {e.code}), this agent cannot think until it logs in again')
+    raise SystemExit
+except Exception as e:
+    print(f'3 "Hermes model login" - could not reach ChatGPT: {e}')
+    raise SystemExit
+
+print(f'0 "Hermes model login" token_hours_left={exp_h:.0f} ChatGPT {u.get("plan_type", "?")} login accepted, token good for {exp_h:.0f} h')
+
+rl = u.get("rate_limit") or {}
+w = rl.get("primary_window") or {}
+used = w.get("used_percent", 0)
+reset_d = (w.get("reset_after_seconds") or 0) / 86400
+if rl.get("limit_reached") or not rl.get("allowed", True):
+    print(f'2 "Hermes usage" used_percent={used};80;95 LIMIT REACHED, this agent is out of usage until reset in {reset_d:.1f} days')
+else:
+    # WARN at 80 % of the weekly limit, CRIT at 95 %
+    print(f'P "Hermes usage" used_percent={used};80;95 {used}% of the weekly limit used, resets in {reset_d:.1f} days')

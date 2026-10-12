@@ -1,0 +1,83 @@
+#!/usr/bin/env python3
+# Checkmk local check: is this Hermes agent alive and actually doing work?
+#
+# WHAT IT DOES
+#   Prints three lines, so Checkmk creates three services on the host:
+#     "Hermes gateway"  the gateway service is running AND its heartbeat file is fresh
+#     "Hermes replies"  hours since the agent last finished an answer (WARN 24 h, CRIT 48 h)
+#     "Hermes crons"    the scheduler is ticking and no enabled job is failing
+#   Each printed line is: <state> "<service name>" <metrics> <text>
+#
+# WHAT TO CHANGE
+#   Nothing, if the agent keeps its files in ~/.hermes. Otherwise set HERMES_HOME.
+#   The thresholds (24 and 48 hours, 300 seconds) are plain numbers in the code below.
+#   Written for the Hermes agent runtime; the file names it reads are Hermes's own.
+#
+# WHERE IT GOES
+#   On the monitored Linux host, with the Checkmk agent installed (chmod 755):
+#     /usr/lib/check_mk_agent/local/hermes_agent
+#   It runs every time the agent is polled (about once a minute).
+import glob, json, os, platform, sqlite3, subprocess, time
+
+def hermes_home():
+    # Look in $HERMES_HOME first, then the running user's ~/.hermes, then any /home/*/.hermes
+    cands = [os.environ.get("HERMES_HOME"), os.path.expanduser("~/.hermes")]
+    cands += sorted(glob.glob("/home/*/.hermes"))
+    for h in cands:
+        if h and (os.path.isfile(os.path.join(h, "state.db")) or os.path.isfile(os.path.join(h, "auth.json"))):
+            return h
+    return os.path.expanduser("~/.hermes")
+
+HOME = hermes_home()
+now = time.time()
+
+def age_min(seconds):
+    return int(seconds // 60)
+
+# 1. Gateway: the service is running AND its heartbeat file is fresh.
+if platform.system() == "Darwin":  # macOS: Hermes runs as the launchd job ai.hermes.gateway
+    r = subprocess.run(["launchctl", "list", "ai.hermes.gateway"], capture_output=True, text=True)
+    active = r.returncode == 0 and '"PID"' in r.stdout
+else:
+    active = subprocess.run(["systemctl", "is-active", "--quiet", "hermes-gateway"]).returncode == 0
+try:
+    hb = json.load(open(f"{HOME}/state/gateway.heartbeat"))
+    hb_age = now - os.path.getmtime(f"{HOME}/state/gateway.heartbeat")
+    up_min = age_min(now - hb.get("start_time", now))
+except Exception:
+    hb_age, up_min = 1e9, 0
+if not active:
+    print('2 "Hermes gateway" - the Hermes gateway service is DOWN')
+elif hb_age > 300:
+    print(f'2 "Hermes gateway" - service running but frozen: heartbeat {age_min(hb_age)} min old')
+else:
+    print(f'0 "Hermes gateway" uptime_min={up_min} Running, up {up_min} min, heartbeat {int(hb_age)}s ago')
+
+# 2. Replies: when did this agent last finish an answer, and how many in 24 h?
+try:
+    db = sqlite3.connect(f"file:{HOME}/state.db?mode=ro", uri=True)
+    last = db.execute("select max(timestamp) from messages where role='assistant' and finish_reason='stop'").fetchone()[0] or 0
+    n24 = db.execute("select count(*) from messages where role='assistant' and timestamp > ?", (now - 86400,)).fetchone()[0]
+    last_h = (now - last) / 3600
+    # WARN after 24 h with no finished answer, CRIT after 48 h
+    print(f'P "Hermes replies" hours_since_reply={last_h:.1f};24;48|replies_24h={n24} Last answer {age_min(now - last)} min ago, {n24} replies in 24 h')
+except Exception as e:
+    print(f'3 "Hermes replies" - cannot read state.db: {e}')
+
+# 3. Crons: the scheduler is ticking and no enabled job is failing.
+try:
+    jobs_file = f"{HOME}/cron/jobs.json"
+    jobs = json.load(open(jobs_file))["jobs"] if os.path.exists(jobs_file) else []  # no file = no jobs scheduled
+    enabled = [j for j in jobs if j.get("enabled")]
+    failing = [j["name"] for j in enabled if j.get("last_status") not in (None, "ok") or (j.get("failure_streak") or 0) > 0]
+    tick_age = now - os.path.getmtime(f"{HOME}/cron/ticker_heartbeat")
+    if tick_age > 300:
+        print(f'2 "Hermes crons" enabled={len(enabled)}|failing={len(failing)} Scheduler stopped: last tick {age_min(tick_age)} min ago')
+    elif failing:
+        print(f'2 "Hermes crons" enabled={len(enabled)}|failing={len(failing)} {len(failing)} of {len(enabled)} failing: {", ".join(failing)}')
+    elif not enabled:
+        print(f'0 "Hermes crons" enabled=0|failing=0 No scheduled jobs, scheduler ticked {int(tick_age)}s ago')
+    else:
+        print(f'0 "Hermes crons" enabled={len(enabled)}|failing=0 All {len(enabled)} scheduled jobs OK, scheduler ticked {int(tick_age)}s ago')
+except Exception as e:
+    print(f'3 "Hermes crons" - cannot read cron jobs: {e}')
