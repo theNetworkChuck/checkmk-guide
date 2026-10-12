@@ -2,7 +2,7 @@
 
 **What you'll end up with:** Ceph cluster health and pool usage, and the SMART health and temperature of every disk, monitored on a Linux server.
 
-Video: starts at 23:57.
+Video: starts at 23:55.
 
 ## What you need first
 

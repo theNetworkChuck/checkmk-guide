@@ -2,7 +2,7 @@
 
 **What you'll end up with:** your switches, routers and other network gear found automatically by an IP range scan and monitored over SNMP, with no software installed on any of them.
 
-Video: starts at 07:14.
+Video: starts at 07:16.
 
 ## What you need first
 

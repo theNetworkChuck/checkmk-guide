@@ -2,7 +2,7 @@
 
 **What you'll end up with:** a check that loads a web page from the Checkmk server on a schedule, and goes critical if the page is down or the text you expect is missing.
 
-Video: starts at 20:23.
+Video: starts at 20:24.
 
 ## What you need first
 

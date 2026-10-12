@@ -2,7 +2,7 @@
 
 **What you'll end up with:** when a chosen service goes critical, Checkmk files a ticket on a Paperclip board, assigned to an AI agent that investigates and fixes it. The video uses this for a stopped Hermes gateway, with an IT-department agent as the assignee.
 
-Video: starts at 31:09.
+Video: starts at 31:11.
 
 ## What you need first
 

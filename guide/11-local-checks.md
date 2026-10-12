@@ -59,25 +59,24 @@ You should see the line printed back:
 
 The new service **My first service** appears on the host. Any local check you add later shows up the same way: put the script in place, rescan, accept, activate.
 
-### Step 3: Install the Hermes agent checks
+### Step 3: Install the Hermes agent check
 
-The scripts in this repo's [`scripts/local/`](../scripts/local) folder check a [Hermes](https://www.youtube.com/watch?v=QQEgIo4Juxg) AI agent. Use them as a real example, or as a starting point for a check of your own.
+The script in this repo's [`scripts/local/`](../scripts/local) folder checks a [Hermes](https://www.youtube.com/watch?v=QQEgIo4Juxg) AI agent. Use it as a real example, or as a starting point for a check of your own.
 
-`hermes_agent` prints three services every minute. `hermes_account` prints two services and is meant to run less often, so it goes in a numbered folder.
+`hermes_agent` prints three services every time the agent is polled.
+
+The video also shows "Hermes model login" and "Hermes usage" services. They are custom checks built the same way as `hermes_agent` and are not included here because they depend on a provider's undocumented endpoint.
 
 ```bash
 sudo install -m 0755 scripts/local/hermes_agent /usr/lib/check_mk_agent/local/hermes_agent
-sudo install -d /usr/lib/check_mk_agent/local/300
-sudo install -m 0755 scripts/local/hermes_account /usr/lib/check_mk_agent/local/300/hermes_account
 ```
 
-A folder named with a number of seconds (here `300`) makes the agent run the scripts inside only that often and cache the result. Use it for checks that are slow or call an outside service.
+Checks that are slow or call an outside service can go in a folder named for a number of seconds, for example `/usr/lib/check_mk_agent/local/300/`. The agent then runs the scripts inside only that often and caches the result.
 
-Run them by hand:
+Run it by hand:
 
 ```bash
 sudo /usr/lib/check_mk_agent/local/hermes_agent
-sudo /usr/lib/check_mk_agent/local/300/hermes_account
 ```
 
 `hermes_agent` should print three lines:
@@ -88,7 +87,7 @@ P "Hermes replies" hours_since_reply=...;24;48|replies_24h=... Last answer ... m
 0 "Hermes crons" enabled=...|failing=0 All ... scheduled jobs OK, scheduler ticked ...s ago
 ```
 
-`hermes_account` prints the model login check, and for ChatGPT logins a usage line. Read the comments at the top of each script. They explain what each one reads and what to change.
+Read the comments at the top of the script. They explain what it reads and what to change.
 
 ### Step 4: Add the services to Checkmk
 
@@ -97,7 +96,6 @@ Do Step 2 again for the Hermes host. You get these services:
 - **Hermes gateway**: running, and its heartbeat is fresh.
 - **Hermes replies**: when the agent last answered, and how many answers in 24 hours.
 - **Hermes crons**: the scheduler is ticking and no job is failing.
-- **Hermes model login** and **Hermes usage**: from `hermes_account`.
 
 ### Step 5: Use the pattern for your own checks
 

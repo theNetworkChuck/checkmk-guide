@@ -2,7 +2,7 @@
 
 **What you'll end up with:** your Docker host monitored, and each container showing up as its own monitored item with CPU, memory, disk and status.
 
-Video: starts at 10:48.
+Video: starts at 10:49.
 
 ## What you need first
 

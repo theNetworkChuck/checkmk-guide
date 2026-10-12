@@ -2,7 +2,7 @@
 
 **What you'll end up with:** your Proxmox VE host monitored through its API, with nothing installed on Proxmox, and your VMs showing up with their Proxmox data (CPU, memory, disk, network, backup status, snapshot age).
 
-Video: starts at 16:45.
+Video: starts at 16:47.
 
 ## What you need first
 

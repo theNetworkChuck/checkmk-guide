@@ -2,7 +2,7 @@
 
 **What you'll end up with:** a Windows machine reporting CPU, memory, disks, network interfaces, Windows services and more into Checkmk.
 
-Video: starts at 22:13.
+Video: starts at 22:15.
 
 ## What you need first
 

@@ -18,12 +18,12 @@ The timestamp is where that part starts in the video. The first minute (00:00 to
 |---|---------|-----------|----------------|
 | 1 | [Install Checkmk](guide/01-install-checkmk.md) | 00:53 | Install Checkmk Community on Ubuntu 24.04, create a site, log in |
 | 2 | [Add your first Linux host](guide/02-first-linux-host.md) | 03:00 | Install the agent, open port 6556, test the connection, run service discovery, activate changes |
-| 3 | [Scan your network with SNMP](guide/03-network-scan-snmp.md) | 07:14 | Turn on SNMP on a switch, scan an IP range in a folder, switch the found devices on, discover |
-| 4 | [Monitor Docker and every container](guide/04-docker.md) | 10:48 | Docker agent plugin, a piggyback folder, import containers from a CSV |
-| 5 | [Monitor Proxmox VE and every VM](guide/05-proxmox.md) | 16:45 | Make a read-only Proxmox user, add the Proxmox special agent rule, match VM names |
-| 6 | [Monitor a website](guide/06-websites.md) | 20:23 | The "Check HTTP web service" rule with an expected string |
-| 7 | [Monitor a Windows PC](guide/07-windows.md) | 22:13 | The MSI agent, a firewall rule, restart the agent service |
-| 8 | [Ceph and SMART plugins](guide/08-ceph-and-smart.md) | 23:57 | Add the Ceph and SMART agent plugins for cluster and disk health |
+| 3 | [Scan your network with SNMP](guide/03-network-scan-snmp.md) | 07:16 | Turn on SNMP on a switch, scan an IP range in a folder, switch the found devices on, discover |
+| 4 | [Monitor Docker and every container](guide/04-docker.md) | 10:49 | Docker agent plugin, a piggyback folder, import containers from a CSV |
+| 5 | [Monitor Proxmox VE and every VM](guide/05-proxmox.md) | 16:47 | Make a read-only Proxmox user, add the Proxmox special agent rule, match VM names |
+| 6 | [Monitor a website](guide/06-websites.md) | 20:24 | The "Check HTTP web service" rule with an expected string |
+| 7 | [Monitor a Windows PC](guide/07-windows.md) | 22:15 | The MSI agent, a firewall rule, restart the agent service |
+| 8 | [Ceph and SMART plugins](guide/08-ceph-and-smart.md) | 23:55 | Add the Ceph and SMART agent plugins for cluster and disk health |
 | 9 | [Install a package from the Checkmk Exchange](guide/09-exchange-packages.md) | 25:27 | UniFi example: `mkp add`, `mkp enable`, the rule, piggyback hosts |
 | 10 | [Build your own checks with AI](guide/10-build-your-own-checks-with-ai.md) | 27:18 | Plex and Home Assistant checks wired in with "Integrate Nagios plug-ins" |
 | 11 | [Local checks](guide/11-local-checks.md) | 28:56 | A script on the monitored server prints one line per service |
@@ -40,7 +40,6 @@ Sanitized, working copies of the custom pieces from the video. Read the header o
 | [`scripts/check_plex.py`](scripts/check_plex.py) | Plex check: version, who is streaming, transcodes, library sizes (chapter 10) |
 | [`scripts/check_homeassistant.py`](scripts/check_homeassistant.py) | Home Assistant check: entities, unavailable devices, cameras down; `--house` for lights, air quality, motion (chapter 10) |
 | [`scripts/local/hermes_agent`](scripts/local/hermes_agent) | Local check for a Hermes AI agent: gateway, replies, crons (chapter 11) |
-| [`scripts/local/hermes_account`](scripts/local/hermes_account) | Local check for a Hermes agent's model login and usage (chapter 11) |
 | [`scripts/notifications/paperclip_ticket.py`](scripts/notifications/paperclip_ticket.py) | Notification script that turns a Checkmk alert into a Paperclip ticket (chapter 13) |
 | [`scripts/api/cmk_api.py`](scripts/api/cmk_api.py) | Small REST API helper: list hosts, add a host, discover, activate (chapter 14) |
 

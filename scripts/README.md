@@ -7,7 +7,6 @@ Each file starts with a header that says what it does and what to change. Nothin
 | `check_plex.py` | Checkmk server | `~/local/lib/nagios/plugins/` (as the site user), `chmod +x` | [10](../guide/10-build-your-own-checks-with-ai.md) |
 | `check_homeassistant.py` | Checkmk server | `~/local/lib/nagios/plugins/`, `chmod +x` | [10](../guide/10-build-your-own-checks-with-ai.md) |
 | `local/hermes_agent` | monitored Linux host | `/usr/lib/check_mk_agent/local/`, `chmod 755` | [11](../guide/11-local-checks.md) |
-| `local/hermes_account` | monitored Linux host | `/usr/lib/check_mk_agent/local/300/`, `chmod 755` | [11](../guide/11-local-checks.md) |
 | `notifications/paperclip_ticket.py` | Checkmk server | `~/local/share/check_mk/notifications/`, `chmod +x` | [13](../guide/13-alert-to-ai-ticket.md) |
 | `api/cmk_api.py` | anywhere that can reach Checkmk | wherever you like | [14](../guide/14-automation-user-rest-api.md) |
 
@@ -18,8 +17,7 @@ All of them are plain Python 3 (the standard library only), so there is nothing 
 - The Plex and Home Assistant checks read their token from a file you point them at (`--token-file`). Keep that file readable by the Checkmk site user only (`chmod 600`).
 - The ticket script reads a Paperclip board key from a file (`~/etc/paperclip.key` for the site user).
 - `cmk_api.py` reads `CMK_URL`, `CMK_USER` and `CMK_SECRET` from the environment.
-- The Hermes checks read the agent's own stored login on the same machine. They use it only to ask the provider whether the login is accepted and never print it. `hermes_account` calls ChatGPT's usage endpoint, which is not a documented public API and may change.
 
 ## Test them
 
-The Plex, Home Assistant, ticket and API scripts were run against stand-in servers with sample data. `hermes_agent` was run on a machine with a Hermes agent; `hermes_account` was only syntax-checked, because it needs a real stored model login. Run each script once by hand before you wire it into Checkmk, as the chapters show.
+The Plex, Home Assistant, ticket and API scripts were run against stand-in servers with sample data. `hermes_agent` was run on a machine with a Hermes agent. Run each script once by hand before you wire it into Checkmk, as the chapters show.
