@@ -6,7 +6,7 @@ Get Checkmk: https://checkmk.io/networkchuck
 
 Disclosure: the video is sponsored by Checkmk.
 
-Watch the video: VIDEO_URL
+Watch the video: [You can monitor EVERYTHING in your homelab with this](https://www.youtube.com/watch?v=Bjifz55TTPI)
 
 This guide repeats every step of the video, one chapter at a time, with the exact commands and clicks. Follow it in order the first time. Each chapter ends with a fix-it table.
 
